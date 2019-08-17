@@ -40,8 +40,14 @@ void AVehicle::CalculateVelocity(float deltaTime)
 {
 	// apply acceleration
 	FVector force = GetActorForwardVector() * MaxDrivingForce * Throttle;
+	force += GetAirResistance();
 	FVector acceleration = force / Mass;
 	Velocity += (acceleration * deltaTime);
+}
+
+FVector AVehicle::GetAirResistance()
+{
+	return -1.f * Velocity.GetSafeNormal() * Velocity.SizeSquared() * DragCoefficient;
 }
 
 void AVehicle::CalculateRotation(float deltaTime)

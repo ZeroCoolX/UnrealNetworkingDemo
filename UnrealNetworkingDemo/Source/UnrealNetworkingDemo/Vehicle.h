@@ -40,6 +40,11 @@ private:
 	UPROPERTY()
 	float MaxTurnDegreesPerSecond = 90.f;
 
+	// Aerodynamics (higher means more resistance) (in kg)
+	// TODO: calculate this on the fly - MaxDrivingForce / DesiredSpeed^2 (speed = 60mph or 25 m/s)
+	UPROPERTY()
+	float DragCoefficient = 16.f;
+
 	// Meters per second
 	FVector Velocity;	
 	// Current speed and rotation based off user input
@@ -50,6 +55,7 @@ private:
 	inline void ApplyThrottle(float amount) { Throttle = amount; }
 	inline void ApplySteering(float amount) { SteeringThrow = amount; }
 
+	FVector GetAirResistance();
 	void CalculateVelocity(float deltaTime);
 	void CalculateRotation(float deltaTime);
 	void UpdateLocationFromVelocity(float deltaTime);
