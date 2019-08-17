@@ -28,9 +28,6 @@ public:
 
 
 private:
-	// Meters per second
-	FVector Velocity;	
-
 	// Mass in kg
 	UPROPERTY(EditAnywhere)
 	float Mass = 1000;
@@ -39,12 +36,21 @@ private:
 	UPROPERTY(EditAnywhere)
 	float MaxDrivingForce = 10000;	// 10000 / 1000 = 10 m/s
 
-	// Current throttle based off user input
+	// the number of maximum degrees per second at max throttle
+	UPROPERTY()
+	float MaxTurnDegreesPerSecond = 90.f;
+
+	// Meters per second
+	FVector Velocity;	
+	// Current speed and rotation based off user input
 	float Throttle;
+	float SteeringThrow;
 
 private:
 	inline void ApplyThrottle(float amount) { Throttle = amount; }
-	
+	inline void ApplySteering(float amount) { SteeringThrow = amount; }
+
 	void CalculateVelocity(float deltaTime);
+	void CalculateRotation(float deltaTime);
 	void UpdateLocationFromVelocity(float deltaTime);
 };
