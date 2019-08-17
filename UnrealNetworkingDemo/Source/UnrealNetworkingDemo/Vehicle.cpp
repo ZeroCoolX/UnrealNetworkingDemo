@@ -2,6 +2,7 @@
 
 #include "Vehicle.h"
 #include "Components/InputComponent.h"
+#include "Engine/World.h"
 
 // Scalar value for converting Centimeters per second (CPS) to Meters per second (MPS)
 const float CMS_TO_MS = 100.f;
@@ -41,6 +42,7 @@ void AVehicle::CalculateVelocity(float deltaTime)
 	// apply acceleration
 	FVector force = GetActorForwardVector() * MaxDrivingForce * Throttle;
 	force += GetAirResistance();
+	force += GetRollingResistance();
 	FVector acceleration = force / Mass;
 	Velocity += (acceleration * deltaTime);
 }
@@ -48,6 +50,13 @@ void AVehicle::CalculateVelocity(float deltaTime)
 FVector AVehicle::GetAirResistance()
 {
 	return -1.f * Velocity.GetSafeNormal() * Velocity.SizeSquared() * DragCoefficient;
+}
+
+FVector AVehicle::GetRollingResistance()
+{
+	float accelerationDueToGravity = -1.f * (GetWorld()->GetGravityZ() / CMS_TO_MS);
+	float normalForce = Mass * accelerationDueToGravity;
+	return -1.f * Velocity.GetSafeNormal() * RollingResistanceCoefficient * normalForce;
 }
 
 void AVehicle::CalculateRotation(float deltaTime)

@@ -45,6 +45,10 @@ private:
 	UPROPERTY()
 	float DragCoefficient = 16.f;
 
+	// Taken from wikipedia for std rolling resistance on wheels
+	UPROPERTY()
+	float RollingResistanceCoefficient = 0.015f;
+
 	// Meters per second
 	FVector Velocity;	
 	// Current speed and rotation based off user input
@@ -56,6 +60,8 @@ private:
 	inline void ApplySteering(float amount) { SteeringThrow = amount; }
 
 	FVector GetAirResistance();
+	FVector GetRollingResistance();
+
 	void CalculateVelocity(float deltaTime);
 	void CalculateRotation(float deltaTime);
 	void UpdateLocationFromVelocity(float deltaTime);
