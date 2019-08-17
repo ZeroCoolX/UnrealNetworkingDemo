@@ -42,6 +42,9 @@ private:
 	// Current throttle based off user input
 	float Throttle;
 
-	void MoveForward(float amount);
+private:
+	inline void ApplyThrottle(float amount) { Throttle = amount; }
 	
+	void CalculateVelocity(float deltaTime);
+	void UpdateLocationFromVelocity(float deltaTime);
 };
