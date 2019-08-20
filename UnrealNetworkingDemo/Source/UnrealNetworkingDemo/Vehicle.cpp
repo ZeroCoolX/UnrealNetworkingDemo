@@ -3,6 +3,7 @@
 #include "Vehicle.h"
 #include "Components/InputComponent.h"
 #include "Engine/World.h"
+#include "DrawDebugHelpers.h"
 
 // Scalar value for converting Centimeters per second (CPS) to Meters per second (MPS)
 const float CMS_TO_MS = 100.f;
@@ -23,8 +24,23 @@ void AVehicle::BeginPlay()
 void AVehicle::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
-	PlayerInputComponent->BindAxis("MoveForward", this, &AVehicle::Server_ApplyThrottle);
-	PlayerInputComponent->BindAxis("MoveRight", this, &AVehicle::Server_ApplySteering);
+	PlayerInputComponent->BindAxis("MoveForward", this, &AVehicle::ApplyThrottle);
+	PlayerInputComponent->BindAxis("MoveRight", this, &AVehicle::ApplySteering);
+}
+
+FString GetEnumText(ENetRole role) {
+	switch (role) {
+	case ROLE_Authority:
+		return "ROLE_Authority";
+	case ROLE_SimulatedProxy:
+		return "ROLE_SimulatedProxy";
+	case ROLE_None:
+		return "ROLE_None";
+	case ROLE_AutonomousProxy:
+		return "ROLE_AutonomousProxy";
+	default:
+		return "ERROR";
+	}
 }
 
 void AVehicle::Tick(float DeltaTime)
@@ -33,6 +49,9 @@ void AVehicle::Tick(float DeltaTime)
 	CalculateVelocity(DeltaTime);
 	CalculateRotation(DeltaTime);
 	UpdateLocationFromVelocity(DeltaTime);
+
+	// TODO: Debugging only
+	DrawDebugString(GetWorld(), FVector(0.f, 0.f, 100.f), GetEnumText(Role), this, FColor::White, DeltaTime);
 }
 
 
@@ -47,7 +66,14 @@ void AVehicle::CalculateVelocity(float deltaTime)
 	Velocity += (acceleration * deltaTime);
 }
 
-// Allows the client to update the state on the server
+void AVehicle::ApplyThrottle(float amount)
+{
+	// update on the client
+	Throttle = amount;
+	// inform the server
+	Server_ApplyThrottle_Implementation(amount);
+}
+
 void AVehicle::Server_ApplyThrottle_Implementation(float amount)
 {
 	Throttle = amount;
@@ -55,10 +81,17 @@ void AVehicle::Server_ApplyThrottle_Implementation(float amount)
 
 bool AVehicle::Server_ApplyThrottle_Validate(float amount)
 {
-	return FMath::Abs(amount) <= 1;
+	return FMath::Abs(amount) <= 1.f;
 }
 
-// Allows the client to update the state on the server
+void AVehicle::ApplySteering(float amount)
+{
+	// update on the client
+	SteeringThrow = amount;
+	// inform the server
+	Server_ApplySteering_Implementation(amount);
+}
+
 void AVehicle::Server_ApplySteering_Implementation(float amount)
 {
 	SteeringThrow = amount;
@@ -66,8 +99,9 @@ void AVehicle::Server_ApplySteering_Implementation(float amount)
 
 bool AVehicle::Server_ApplySteering_Validate(float amount)
 {
-	return FMath::Abs(amount) <= 1;
+	return FMath::Abs(amount) <= 1.f;
 }
+
 
 FVector AVehicle::GetAirResistance()
 {

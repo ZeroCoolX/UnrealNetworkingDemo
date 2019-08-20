@@ -52,8 +52,12 @@ private:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_ApplyThrottle(float amount);
 
+	void ApplyThrottle(float amount);
+
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_ApplySteering(float amount);
+
+	void ApplySteering(float amount);
 
 	// Meters per second
 	FVector Velocity;	
