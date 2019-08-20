@@ -49,6 +49,12 @@ private:
 	UPROPERTY()
 	float RollingResistanceCoefficient = 0.015f;
 
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_ApplyThrottle(float amount);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_ApplySteering(float amount);
+
 	// Meters per second
 	FVector Velocity;	
 	// Current speed and rotation based off user input
@@ -56,9 +62,6 @@ private:
 	float SteeringThrow;
 
 private:
-	inline void ApplyThrottle(float amount) { Throttle = amount; }
-	inline void ApplySteering(float amount) { SteeringThrow = amount; }
-
 	FVector GetAirResistance();
 	FVector GetRollingResistance();
 

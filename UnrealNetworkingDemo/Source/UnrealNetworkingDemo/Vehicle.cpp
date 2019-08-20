@@ -23,8 +23,8 @@ void AVehicle::BeginPlay()
 void AVehicle::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
-	PlayerInputComponent->BindAxis("MoveForward", this, &AVehicle::ApplyThrottle);
-	PlayerInputComponent->BindAxis("MoveRight", this, &AVehicle::ApplySteering);
+	PlayerInputComponent->BindAxis("MoveForward", this, &AVehicle::Server_ApplyThrottle);
+	PlayerInputComponent->BindAxis("MoveRight", this, &AVehicle::Server_ApplySteering);
 }
 
 void AVehicle::Tick(float DeltaTime)
@@ -45,6 +45,28 @@ void AVehicle::CalculateVelocity(float deltaTime)
 
 	FVector acceleration = force / Mass;
 	Velocity += (acceleration * deltaTime);
+}
+
+// Allows the client to update the state on the server
+void AVehicle::Server_ApplyThrottle_Implementation(float amount)
+{
+	Throttle = amount;
+}
+
+bool AVehicle::Server_ApplyThrottle_Validate(float amount)
+{
+	return FMath::Abs(amount) <= 1;
+}
+
+// Allows the client to update the state on the server
+void AVehicle::Server_ApplySteering_Implementation(float amount)
+{
+	SteeringThrow = amount;
+}
+
+bool AVehicle::Server_ApplySteering_Validate(float amount)
+{
+	return FMath::Abs(amount) <= 1;
 }
 
 FVector AVehicle::GetAirResistance()
