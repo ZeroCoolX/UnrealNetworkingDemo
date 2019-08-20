@@ -18,7 +18,6 @@ AVehicle::AVehicle()
 void AVehicle::BeginPlay()
 {
 	Super::BeginPlay();
-	
 }
 
 void AVehicle::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -43,6 +42,7 @@ void AVehicle::CalculateVelocity(float deltaTime)
 	FVector force = GetActorForwardVector() * MaxDrivingForce * Throttle;
 	force += GetAirResistance();
 	force += GetRollingResistance();
+
 	FVector acceleration = force / Mass;
 	Velocity += (acceleration * deltaTime);
 }
@@ -61,9 +61,11 @@ FVector AVehicle::GetRollingResistance()
 
 void AVehicle::CalculateRotation(float deltaTime)
 {
-	// The amount the user is pressing to turn * change in time * maximum degrees allowed to turn per second
-	float rotationAngle = SteeringThrow * deltaTime * MaxTurnDegreesPerSecond;
-	FQuat deltaRotation(FVector::UpVector, FMath::DegreesToRadians(rotationAngle));
+	float deltaLocation = FVector::DotProduct(GetActorForwardVector(), Velocity) * deltaTime;
+	// The smaller the steering turn, the bigger the radius
+	float rotationAngle = (deltaLocation / MinTurnRadius) * SteeringThrow;
+	FQuat deltaRotation(FVector::UpVector, rotationAngle);
+
 	// Update the forward direction after rotation
 	Velocity = deltaRotation.RotateVector(Velocity);
 	AddActorWorldRotation(deltaRotation);

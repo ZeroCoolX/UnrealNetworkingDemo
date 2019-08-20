@@ -36,9 +36,9 @@ private:
 	UPROPERTY(EditAnywhere)
 	float MaxDrivingForce = 10000;	// 10000 / 1000 = 10 m/s
 
-	// the number of maximum degrees per second at max throttle
+	// the minimum turning radius of the car turning circle at full lock (m/s)
 	UPROPERTY()
-	float MaxTurnDegreesPerSecond = 90.f;
+	float MinTurnRadius = 10.f;
 
 	// Aerodynamics (higher means more resistance) (in kg)
 	// TODO: calculate this on the fly - MaxDrivingForce / DesiredSpeed^2 (speed = 60mph or 25 m/s)
