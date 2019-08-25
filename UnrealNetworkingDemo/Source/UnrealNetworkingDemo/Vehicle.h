@@ -49,18 +49,24 @@ private:
 	UPROPERTY()
 	float RollingResistanceCoefficient = 0.015f;
 
+	// Runs code on the local machine
+	void ApplyLocalThrottle(float amount);
+	void ApplyLocalSteering(float amount);
+
+	// Runs code on the server
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_ApplyThrottle(float amount);
-
-	void ApplyThrottle(float amount);
-
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_ApplySteering(float amount);
 
-	void ApplySteering(float amount);
+	UPROPERTY(ReplicatedUsing=OnRep_ReplicatedTransform)
+	FTransform ReplicatedTransform;
+	UFUNCTION()
+	void OnRep_ReplicatedTransform();
 
 	// Meters per second
 	FVector Velocity;	
+
 	// Current speed and rotation based off user input
 	float Throttle;
 	float SteeringThrow;
