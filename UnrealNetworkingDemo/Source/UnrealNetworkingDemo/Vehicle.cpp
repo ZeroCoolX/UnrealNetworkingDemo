@@ -38,6 +38,9 @@ AVehicle::AVehicle()
 void AVehicle::BeginPlay()
 {
 	Super::BeginPlay();
+	if (HasAuthority()) {
+		NetUpdateFrequency = 1;
+	}
 }
 
 /*  Input Replication  */
@@ -71,6 +74,9 @@ bool AVehicle::Server_ApplySteering_Validate(float amount) {return FMath::Abs(am
 void AVehicle::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AVehicle, ReplicatedTransform);
+	DOREPLIFETIME(AVehicle, Velocity);
+	DOREPLIFETIME(AVehicle, Throttle);
+	DOREPLIFETIME(AVehicle, SteeringThrow);
 }
 
 void AVehicle::OnRep_ReplicatedTransform() {

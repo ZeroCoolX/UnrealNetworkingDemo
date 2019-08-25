@@ -65,10 +65,12 @@ private:
 	void OnRep_ReplicatedTransform();
 
 	// Meters per second
+	UPROPERTY(Replicated)
 	FVector Velocity;	
-
 	// Current speed and rotation based off user input
+	UPROPERTY(Replicated)
 	float Throttle;
+	UPROPERTY(Replicated)
 	float SteeringThrow;
 
 private:
