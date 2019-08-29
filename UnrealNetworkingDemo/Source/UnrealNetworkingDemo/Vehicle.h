@@ -6,6 +6,34 @@
 #include "GameFramework/Pawn.h"
 #include "Vehicle.generated.h"
 
+USTRUCT()
+struct FVehicleMove {
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY()
+	float Throttle;
+
+	UPROPERTY()
+	float SteeringThrow;
+
+	UPROPERTY()
+	float DeltaTime;
+};
+
+USTRUCT()
+struct FVehicleState {
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY()
+	FVehicleMove LastMove;
+
+	UPROPERTY()
+	FVector Velocity;
+
+	UPROPERTY()
+	FTransform Transform;
+};
+
 UCLASS()
 class UNREALNETWORKINGDEMO_API AVehicle : public APawn
 {
@@ -55,29 +83,27 @@ private:
 
 	// Runs code on the server
 	UFUNCTION(Server, Reliable, WithValidation)
-	void Server_ApplyThrottle(float amount);
-	UFUNCTION(Server, Reliable, WithValidation)
-	void Server_ApplySteering(float amount);
+	void Server_SendMove(FVehicleMove move);
 
-	UPROPERTY(ReplicatedUsing=OnRep_ReplicatedTransform)
-	FTransform ReplicatedTransform;
+
 	UFUNCTION()
-	void OnRep_ReplicatedTransform();
+	void OnRep_ServerState();
 
-	// Meters per second
-	UPROPERTY(Replicated)
-	FVector Velocity;	
-	// Current speed and rotation based off user input
-	UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing=OnRep_ServerState)
+	FVehicleState ServerState;
+
+	FVector Velocity;
 	float Throttle;
-	UPROPERTY(Replicated)
 	float SteeringThrow;
 
 private:
+	// consistency achieve on client and server
+	void SimulateMove(FVehicleMove move);
+
 	FVector GetAirResistance();
 	FVector GetRollingResistance();
 
-	void CalculateVelocity(float deltaTime);
-	void CalculateRotation(float deltaTime);
+	void CalculateVelocity(float deltaTime, float throttle);
+	void CalculateRotation(float deltaTime, float steeringThrow);
 	void UpdateLocationFromVelocity(float deltaTime);
 };

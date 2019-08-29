@@ -29,21 +29,69 @@ FString GetEnumText(ENetRole role) {
 // Sets default values
 AVehicle::AVehicle()
 {
- 	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
 }
 
-// Called when the game starts or when spawned
 void AVehicle::BeginPlay()
 {
 	Super::BeginPlay();
-	if (HasAuthority()) {
-		NetUpdateFrequency = 1;
-	}
 }
 
-/*  Input Replication  */
+void AVehicle::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	// Indicates the player controller is on this client
+	if (IsLocallyControlled()) {
+		FVehicleMove move;
+		move.DeltaTime = DeltaTime;
+		move.SteeringThrow = SteeringThrow;
+		move.Throttle = Throttle;
+
+		Server_SendMove(move);
+
+		SimulateMove(move);
+	}
+
+	// TODO: Debugging only
+	DrawDebugString(GetWorld(), FVector(0.f, 0.f, 100.f), GetEnumText(Role), this, FColor::White, DeltaTime);
+}
+
+
+
+/* Server Replication */
+
+bool AVehicle::Server_SendMove_Validate(FVehicleMove move) { return true; }
+void AVehicle::Server_SendMove_Implementation(FVehicleMove move) {
+	SimulateMove(move);
+
+	ServerState.LastMove = move;
+	ServerState.Transform = GetActorTransform();
+	ServerState.Velocity = Velocity;
+}
+
+void AVehicle::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AVehicle, ServerState);
+}
+
+void AVehicle::OnRep_ServerState() {
+	SetActorTransform(ServerState.Transform);
+	Velocity = ServerState.Velocity;
+}
+
+
+
+void AVehicle::SimulateMove(FVehicleMove move) {
+	CalculateVelocity(move.DeltaTime, move.Throttle);
+	CalculateRotation(move.DeltaTime, move.SteeringThrow);
+	UpdateLocationFromVelocity(move.DeltaTime);
+}
+
+
+/*  Movement control functions based off player input  */
+
 void AVehicle::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
@@ -53,57 +101,19 @@ void AVehicle::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 void AVehicle::ApplyLocalThrottle(float amount) {
 	Throttle = amount;
-	Server_ApplyThrottle(amount);
 }
 
 void AVehicle::ApplyLocalSteering(float amount) {
 	SteeringThrow = amount;
-	Server_ApplySteering(amount);
-}
-
-void AVehicle::Server_ApplyThrottle_Implementation(float amount) {
-	Throttle = amount;
-}
-bool AVehicle::Server_ApplyThrottle_Validate(float amount) { return FMath::Abs(amount) <= 1; }
-
-void AVehicle::Server_ApplySteering_Implementation(float amount) {
-	SteeringThrow = amount;
-}
-bool AVehicle::Server_ApplySteering_Validate(float amount) {return FMath::Abs(amount) <= 1;}
-
-void AVehicle::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const {
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(AVehicle, ReplicatedTransform);
-	DOREPLIFETIME(AVehicle, Velocity);
-	DOREPLIFETIME(AVehicle, Throttle);
-	DOREPLIFETIME(AVehicle, SteeringThrow);
-}
-
-void AVehicle::OnRep_ReplicatedTransform() {
-	SetActorTransform(ReplicatedTransform);
-}
-
-void AVehicle::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-	CalculateVelocity(DeltaTime);
-	CalculateRotation(DeltaTime);
-	UpdateLocationFromVelocity(DeltaTime);
-
-	if (HasAuthority()) {
-		ReplicatedTransform = GetActorTransform();
-	}
-
-	// TODO: Debugging only
-	DrawDebugString(GetWorld(), FVector(0.f, 0.f, 100.f), GetEnumText(Role), this, FColor::White, DeltaTime);
 }
 
 
-/*  Movement control functions based off player input  */
-void AVehicle::CalculateVelocity(float deltaTime)
+/*  Physics Simulations  */
+
+void AVehicle::CalculateVelocity(float deltaTime, float throttle)
 {
 	// apply acceleration
-	FVector force = GetActorForwardVector() * MaxDrivingForce * Throttle;
+	FVector force = GetActorForwardVector() * MaxDrivingForce * throttle;
 	force += GetAirResistance();
 	force += GetRollingResistance();
 
@@ -123,11 +133,11 @@ FVector AVehicle::GetRollingResistance()
 	return -1.f * Velocity.GetSafeNormal() * RollingResistanceCoefficient * normalForce;
 }
 
-void AVehicle::CalculateRotation(float deltaTime)
+void AVehicle::CalculateRotation(float deltaTime, float steeringThrow)
 {
 	float deltaLocation = FVector::DotProduct(GetActorForwardVector(), Velocity) * deltaTime;
 	// The smaller the steering turn, the bigger the radius
-	float rotationAngle = (deltaLocation / MinTurnRadius) * SteeringThrow;
+	float rotationAngle = (deltaLocation / MinTurnRadius) * steeringThrow;
 	FQuat deltaRotation(FVector::UpVector, rotationAngle);
 
 	// Update the forward direction after rotation
